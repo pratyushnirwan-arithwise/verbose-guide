@@ -15,7 +15,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 load_dotenv(override=True)
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder=None)
 app.secret_key = os.getenv("SECRET_KEY", "dev-secret")
 app.config.update(
     MAIL_SERVER=os.getenv("MAIL_SERVER"),
@@ -1107,8 +1107,20 @@ def sso_trueday():
         "redirect_url": redirect_url
     })
 
-
+@app.route("/", defaults={"path": ""})
+@app.route("/<path:path>")
+def serve_frontend(path):
+    if path.startswith("api/"):
+        return jsonify({"success": False, "message": "Not Found"}), 404
+    # ponytail: serve frontend static files manually or fallback to index.html for SPA routing
+    dist_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../frontend/dist"))
+    if path and os.path.exists(os.path.join(dist_dir, path)):
+        from flask import send_from_directory
+        return send_from_directory(dist_dir, path)
+    from flask import send_from_directory
+    return send_from_directory(dist_dir, "index.html")
 
 
 if __name__ == "__main__":
-    app.run(port=5550, debug=True)
+    port = int(os.getenv("PORT", 5550))
+    app.run(port=port, debug=True)
