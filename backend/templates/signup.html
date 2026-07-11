@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-store" />
+    <title>Create User | ARITHS</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../static/css/signup.css">
+</head>
+<body>
+    <!-- Theme Toggle Button -->
+    <button class="theme-toggle" onclick="toggleTheme()">
+        <i class="fas fa-sun" id="theme-icon"></i>
+    </button>
+
+    <!-- Cosmic Background Elements -->
+    <!-- <div class="cosmic-bg"></div>
+    <div class="cosmic-stars"></div>
+     -->
+    <div class="user-container">
+        <div class="user-header">
+            <h1>Create New User</h1>
+            <!-- <p>Add a new user to the ARITHS system</p> -->
+        </div>
+        
+        <div class="user-form">
+            <form id="createUserForm" action="/create_user" method="POST">
+                <!-- Personal Information Section -->
+                <div class="form-section">
+                    <div class="section-title">
+                        <i class="fas fa-user"></i>
+                        <span>Personal Information</span>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="firstName">First Name</label>
+                            <input type="text" id="firstName" name="firstName" class="form-control" placeholder="First name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="lastName">Last Name</label>
+                            <input type="text" id="lastName" name="lastName" class="form-control" placeholder="Last name" required>
+                        </div>
+                    </div>
+                    
+                    <!-- <div class="form-row">
+                        <div class="form-group">
+                            <label for="dob">Date of Birth</label>
+                            <input type="date" id="dob" name="dob" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="phoneNumber">Phone Number</label>
+                            <input type="tel" id="phoneNumber" name="phoneNumber" class="form-control" placeholder="+91 (___) ___-____" required>
+                        </div>
+                    </div> -->
+                </div>
+                
+                <!-- Account Information Section -->
+                <div class="form-section">
+                    <div class="section-title">
+                        <i class="fas fa-lock"></i>
+                        <span>Account Information</span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="userEmail">Email Address</label>
+                        <input type="email" id="userEmail" name="userEmail" class="form-control" placeholder="user@arithwise.com" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="userPassword">Password</label>
+                        <div class="password-container">
+                            <input type="password" id="userPassword"  name="userPassword" class="form-control" placeholder="Create a password" required>
+                            <button type="button" class="toggle-password" onclick="togglePassword('userPassword')">
+                                <i class="far fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tool Access Section -->
+                <div class="form-section">
+                    <div class="section-title">
+                        <i class="fas fa-project-diagram"></i>
+                        <span>Tools Licenses</span>
+                    </div>
+
+                    <!-- Tool Selection and Add Button -->
+                    <div class="form-group">
+                        <label for="toolList">Tool Access Control</label>
+                        <div class="form-row" style="gap: 10px; align-items: center;">
+                            <select id="toolList" class="form-control" style="flex: 1;" onchange="addTool()">
+                                <option value="">-- Select Tools --</option>
+                                <option value="ARITHSHIVE">ARITHSHIVE</option>
+                                <option value="TRUEDAY">TRUEDAY</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- List of Added Tools -->
+                    <div id="addedToolsList" style="margin-top: 10px; display: flex; flex-direction: column; gap: 10px;"></div>
+                </div>
+
+
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-user-plus" class="fas fa-sign-in-alt"></i> Create User
+                </button>
+            </form>
+        </div>
+    </div>
+    <script>
+        // Theme Toggle Function
+        function toggleTheme() {
+            const body = document.documentElement;
+            const themeIcon = document.getElementById('theme-icon');
+            if (body.getAttribute('data-theme') === 'light') {
+                body.removeAttribute('data-theme');
+                themeIcon.classList.remove('fa-moon');
+                themeIcon.classList.add('fa-sun');
+                localStorage.setItem('theme', 'dark');
+            } else {
+                body.setAttribute('data-theme', 'light');
+                themeIcon.classList.remove('fa-sun');
+                themeIcon.classList.add('fa-moon');
+                localStorage.setItem('theme', 'light');
+            }
+        }
+
+        // Check for saved theme preference
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedTheme = localStorage.getItem('theme');
+            const themeIcon = document.getElementById('theme-icon');
+            if (savedTheme === 'light') {
+                document.documentElement.setAttribute('data-theme', 'light');
+                themeIcon.classList.remove('fa-sun');
+                themeIcon.classList.add('fa-moon');
+            } else {
+                document.documentElement.removeAttribute('data-theme');
+                themeIcon.classList.remove('fa-moon');
+                themeIcon.classList.add('fa-sun');
+            }
+        });
+
+        // Toggle password visibility
+        function togglePassword() {
+            const passwordInput = document.getElementById('userPassword');
+            const toggleIcon = document.querySelector('.toggle-password i');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                toggleIcon.classList.replace('fa-eye', 'fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                toggleIcon.classList.replace('fa-eye-slash', 'fa-eye');
+            }
+        }
+        
+        document.getElementById('createUserForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const email = document.getElementById('userEmail').value;
+            if (!email.endsWith('@arithwise.com')) {
+                alert('Email must be from @arithwise.com domain');
+                return;
+            }
+
+            const assignedTools = document.querySelectorAll('.assigned-tool');
+            if (assignedTools.length === 0) {
+                alert('Please assign at least one tool.');
+                return;
+            }
+
+            const formData = new FormData(this);
+
+            const tools = [];
+            document.querySelectorAll('[data-tool]').forEach(container => {
+                const tool_name = container.getAttribute('data-tool');
+                const access_type = container.querySelector(`input[name="role_${tool_name}"]:checked`);
+                if (access_type) {
+                    tools.push({
+                        tool_name: tool_name,
+                        access_type: access_type.value
+                    });
+                }
+            });
+
+            formData.append("tools", JSON.stringify(tools));
+
+            const submitBtn = this.querySelector('button[type="submit"]');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating User...';
+
+            fetch('/create_user', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(`User created successfully as ${data.user.fullName} with ID: ${data.user_id}`);
+                    this.reset();
+                    window.location.href = '/';
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                alert('Error creating user: ' + error.message);
+            })
+            .finally(() => {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-user-plus"></i> Create User';
+            });
+        });
+
+        // Add Tool Function
+        function addTool() {
+            const toolSelect = document.getElementById("toolList");
+            const selectedValue = toolSelect.value;
+            const selectedText = toolSelect.options[toolSelect.selectedIndex].text;
+
+            if (!selectedValue) {
+                alert("Please select a Tool.");
+                return;
+            }
+
+            const list = document.getElementById("addedToolsList");
+
+            const existing = list.querySelector(`[data-tool="${selectedValue}"]`);
+            if (existing) {
+                alert("This Tool is already added.");
+                return;
+            }
+
+            const container = document.createElement("div");
+            container.classList.add("checkbox-item", "assigned-tool");
+            container.setAttribute("data-tool", selectedValue);
+
+            container.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
+                    <strong>${selectedText}</strong>
+                    <div style="display: flex; gap: 10px; margin-left: auto; margin-right: 50px;">
+                        <label><input type="radio" name="role_${selectedValue}" value="User"> User</label>
+                        <label><input type="radio" name="role_${selectedValue}" value="Developer"> Developer</label>
+                        <label><input type="radio" name="role_${selectedValue}" value="Admin"> Admin</label>
+                        <label><input type="radio" name="role_${selectedValue}" value="Superuser"> Superuser</label>
+                    </div>
+                    <button type="button" onclick="removeTool(this)" style="background: var(--danger); border: none; color: white; padding: 4px 8px; border-radius: 6px;">X</button>
+                </div>
+            `;
+
+            list.appendChild(container);
+            toolSelect.value = "";
+        }
+
+        function removeTool(button) {
+            const container = button.closest(".checkbox-item");
+            container.remove();
+        }
+
+    </script>
+</body>
+</html>

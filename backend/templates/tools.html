@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-store" />
+    <title>Arithwise | Tech Projects</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../static/css/project.css">
+</head>
+<body>
+
+    <!-- Floating Particles -->
+    <div class="particles" id="particles"></div>
+
+    <!-- Floating Tech Icons -->
+    <div class="tech-icons" id="tech-icons"></div>
+
+    <div class="dashboard-container">
+        <!-- Welcome Banner -->
+        <div class="welcome-banner">
+            <div class="logo-placeholder">
+                <!-- <img src="static\uploads\Logo_PNG_1.png" alt="Arithwise Logo"> -->
+                <img src="../static/uploads/Logo_PNG_1.png" alt="Arithwise Logo">
+            </div>
+            <div class="welcome-text">
+                <h2>Welcome to Arithwise</h2>
+                <p>Explore our cutting-edge tech solutions designed to innovate and transform.</p>
+            </div>
+            <div class="banner-actions">
+                <div>
+                    <a href="javascript:void(0);" class="dashboard-link" id="dashboard-button" onclick="checkDashboardAccess()">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </a>
+                </div>
+                <div class="theme-toggle" id="themeToggle">
+                    <i class="fas fa-sun"></i>
+                    <i class="fas fa-moon"></i>
+                </div>
+                <div class="logout-button">
+                    <a href="/" onclick="destroySession()">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard Header -->
+        <div class="dashboard-header">
+            <h1>Our Tech Portfolio</h1>
+            <p>Discover the powerful tools we've engineered to drive digital transformation.</p>
+        </div>
+
+        <!-- Projects Grid -->
+        <div class="projects-grid">
+            {% for tool in tools %}
+                <div class="project-card {{ tool.tool_name | lower }}">
+                    <div class="project-icon">
+                        {% if tool.tool_name == "ARITHSHIVE" %}
+                            <i class="fas fa-users-cog"></i>
+                        {% elif tool.tool_name == "TRUEDAY" %}
+                            <i class="fas fa-tasks"></i>
+                        {% else %}
+                            <i class="fas fa-toolbox"></i>
+                        {% endif %}
+                    </div>
+                    <div class="project-content">
+                        <h3 class="project-title">{{ tool.tool_name }}</h3>
+                        
+                        {% if tool.tool_name == "ARITHSHIVE" %}
+                            <p class="project-description">A next-gen HRMS platform automating recruitment, payroll, attendance, and performance management with AI-driven insights.</p>
+                        {% elif tool.tool_name == "TRUEDAY" %}
+                            <p class="project-description">A comprehensive progress tracking system with real-time pulse monitoring, ticket management, and workflow automation.</p>
+                        {% else %}
+                            <p class="project-description">Description not available.</p>
+                        {% endif %}
+
+                        <button class="project-btn get-started-btn"
+                                onclick="handleGetStarted('{{ tool.tool_name }}', '{{ tool.access_type }}')">
+                            Get Started
+                        </button>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+    </div>
+
+    <script>
+        // Set default theme to light
+        document.body.classList.add('light-theme');
+        localStorage.setItem('theme', 'light');
+
+        const themeToggle = document.getElementById('themeToggle');
+        
+        // Check for saved theme preference
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'dark') {
+            document.body.classList.remove('light-theme');
+        }
+
+        themeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('light-theme');
+            
+            if (document.body.classList.contains('light-theme')) {
+                localStorage.setItem('theme', 'light');
+            } else {
+                localStorage.setItem('theme', 'dark');
+            }
+        });
+
+        // Example: Call the function when a button is clicked
+        // document.getElementById('dashboard-button').addEventListener('click', checkDashboardAccess);
+
+        function createParticles() {
+            const particlesContainer = document.getElementById('particles');
+            const particleCount = 30;
+            
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.classList.add('particle');
+                
+                // Random properties
+                const size = Math.random() * 5 + 1;
+                const posX = Math.random() * window.innerWidth;
+                const delay = Math.random() * 15;
+                const duration = Math.random() * 10 + 10;
+                const opacity = Math.random() * 0.5 + 0.1;
+                
+                particle.style.width = `${size}px`;
+                particle.style.height = `${size}px`;
+                particle.style.left = `${posX}px`;
+                particle.style.animationDelay = `${delay}s`;
+                particle.style.animationDuration = `${duration}s`;
+                particle.style.opacity = opacity;
+                
+                particlesContainer.appendChild(particle);
+            }
+        }
+        
+        // Create floating tech icons
+        function createTechIcons() {
+            const techIconsContainer = document.getElementById('tech-icons');
+            const icons = [
+                'fa-code', 'fa-server', 'fa-database', 'fa-microchip', 
+                'fa-network-wired', 'fa-cloud', 'fa-laptop-code', 'fa-mobile-alt',
+                'fa-shield-alt', 'fa-bug', 'fa-terminal', 'fa-code-branch'
+            ];
+            const iconCount = 15;
+            
+            for (let i = 0; i < iconCount; i++) {
+                const icon = document.createElement('i');
+                icon.classList.add('tech-icon', 'fas');
+                icon.classList.add(icons[Math.floor(Math.random() * icons.length)]);
+                
+                // Random properties
+                const size = Math.random() * 20 + 10;
+                const posX = Math.random() * window.innerWidth;
+                const delay = Math.random() * 20;
+                const duration = Math.random() * 15 + 20;
+                
+                icon.style.fontSize = `${size}px`;
+                icon.style.left = `${posX}px`;
+                icon.style.animationDelay = `${delay}s`;
+                icon.style.animationDuration = `${duration}s`;
+                
+                techIconsContainer.appendChild(icon);
+            }
+        }
+
+        const user_id = "{{ session['user_id'] }}";
+        console.log(user_id);
+
+        function handleGetStarted(toolName, accessType) {
+            let url;
+
+            // Define URLs based on tool name or use a dynamic mapping from backend if needed
+            if (toolName === "ARITHSHIVE") {
+                url = `https://hrms.onestopanalytics.com?sessionid=${user_id}&access_type=${accessType}`;
+                // window.open("/work_in_progress", "_blank");
+
+            } else if (toolName === "TRUEDAY") {
+                url = `https://trueday.ariths.com?sessionid=${user_id}&access_type=${accessType}`;
+                
+            } else {
+                url = "#"; // fallback
+                alert("This tool is under development.");
+            }
+
+            window.open(url, '_blank');
+        }
+        
+        // Initialize effects
+        window.addEventListener('load', () => {
+            createParticles();
+            createTechIcons();
+        });
+
+        function destroySession() {
+            fetch('/logout')
+                .then(() => {
+                    sessionStorage.clear();
+                    window.location.replace('/'); // Prevent back navigation
+                });
+        }
+
+        // Function to check dashboard access
+        function checkDashboardAccess() {
+            fetch('/dashboard')
+                .then(response => {
+                    if (!response.ok) {
+                        // If the response status is not OK (e.g., 401), handle the error
+                        return response.json().then(data => {
+                            alert("You are not authorized to access the dashboard");
+                        });
+                    } else {
+                        // If authorized, redirect to the dashboard
+                        window.location.href = '/dashboard';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred while checking dashboard access.');
+                });
+        }
+
+    </script>
+</body>
+</html>

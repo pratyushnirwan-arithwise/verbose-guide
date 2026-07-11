@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | ARITHS</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css ">
+    <link rel="stylesheet" href="../static/css/login.css">
+    <style>
+        #savePasswordButton:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .loader {
+            border: 4px solid #f3f3f3; /* Light grey */
+            border-top: 4px solid #3498db; /* Blue */
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            margin: 10px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Theme Toggle Button -->
+    <button class="theme-toggle" onclick="toggleTheme()">
+        <i class="fas fa-moon"></i>
+    </button>
+
+    <!-- Cosmic Background Elements -->
+    <div class="cosmic-bg"></div>
+    <div class="cosmic-stars"></div>
+    <div class="cosmic-planet"></div>
+    <div class="cosmic-ring"></div>
+    <div class="cosmic-comet"></div>
+    
+    <div class="login-container">
+        <div class="login-header">
+            <h1>Welcome to Ariths ! </h1>
+            <div class="role-toggle">
+                <button type="button" class="role-btn active" id="employeeBtn">Login</button>
+                <button type="button" class="role-btn" id="adminBtn">Register</button>
+            </div>
+            <!-- <p>Please enter your details to sign in</p> -->
+        </div>
+        
+        <div class="login-form">
+            <form id="loginForm" method="post">
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <input type="email" name="email" autocomplete="email" id="email" class="form-control" placeholder="Enter your email" required>
+                    <div class="error-message" id="emailError">Email must be @arithwise.com</div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <div class="password-container">
+                        <input type="password" id="password" class="form-control" placeholder="Enter your password" required>
+                        <button type="button" class="toggle-password" onclick="togglePassword()">
+                            <i class="far fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="remember-forgot">
+                    <div class="remember-me">
+                        <input type="checkbox" name="remember" id="remember">
+                        <label for="remember">Remember me</label>
+                    </div>
+                    <div class="forgot-password">
+                        <a href="/" onclick="reset_alert(event)">Forgot Password?</a>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-sign-in-alt"></i> Sign In
+                </button>
+                
+                <div class="add-user-section">
+                    <button type="button" class="add-user-btn" id="addUserBtn" onclick="goToAddUser()" disabled>
+                        <i class="fas fa-plus"></i> Add User
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Custom Prompt Modal for Reset Email -->
+    <div id="resetPromptModal" class="modal-overlay" style="display:none;">
+        <div class="modal-content">
+            <h2>Enter Your Email</h2>
+            <input type="email" id="resetPromptInput" class="form-control" placeholder="Enter your email" required>
+            <div id="resetPromptError" class="error-message" style="display:none;">Please enter a valid email address.</div>
+            <div id="resetPromptLoader" class="loader" style="display:none;"></div>
+            <div class="modal-actions">
+                <button onclick="submitResetPrompt()" class="btn btn-primary">Submit</button>
+                <button onclick="closeResetPrompt()" class="btn btn-secondary">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Verification Code Modal -->
+    <div id="verificationModal" class="modal-overlay" style="display:none;">
+        <div class="modal-content">
+            <h2>Verify Your Email</h2>
+            <p>A 6-digit verification code has been sent to your email.</p>
+            <div class="verification-inputs">
+                <input type="text" class="code-input" maxlength="1" id="code1">
+                <input type="text" class="code-input" maxlength="1" id="code2">
+                <input type="text" class="code-input" maxlength="1" id="code3">
+                <input type="text" class="code-input" maxlength="1" id="code4">
+                <input type="text" class="code-input" maxlength="1" id="code5">
+                <input type="text" class="code-input" maxlength="1" id="code6">
+            </div>
+            <div id="verificationError" class="error-message" style="display:none;">Invalid code. Please try again.</div>
+            <div class="modal-actions">
+                <button onclick="submitVerificationCode()" class="btn btn-primary">Verify</button>
+                <button onclick="closeVerificationModal()" class="btn btn-secondary">Cancel</button>
+                <button onclick="submitResetPrompt()" class="btn btn-primary">Resend </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reset Password Modal -->
+    <div id="resetPasswordModal" class="modal-overlay" style="display:none;">
+        <div class="modal-content">
+            <h2>Reset Password</h2>
+            <input type="password" id="newPasswordInput" class="form-control" placeholder="New Password" required>
+            <input type="password" id="confirmPasswordInput" class="form-control" placeholder="Confirm Password" required>
+            <div class="password-rules" style="text-align: left;">
+                <p>Between 8-12 characters <span id="lengthCheck" class="validation-icon"></span></p>
+                <p>At least one uppercase letter <span id="upperCaseCheck" class="validation-icon"></span></p>
+                <!-- <p><span id="lowerCaseCheck" class="validation-icon"></span> At least one lowercase letter</p> -->
+                <!-- <p><span id="numberCheck" class="validation-icon"></span> At least one number</p> -->
+                <p>At least one special character <span id="specialCharCheck" class="validation-icon"></span></p>
+                <!-- <p><span id="matchCheck" class="validation-icon"></span> Passwords match</p> -->
+            </div>
+            <div id="resetPasswordError" class="error-message" style="display:none;">Passwords do not match or are too short.</div>
+            <div class="modal-actions">
+                <button onclick="saveNewPassword()" class="btn btn-primary" id="savePasswordButton" disabled>Save</button>
+                <button onclick="closeResetPasswordModal()" class="btn btn-secondary">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Set light theme by default
+        document.documentElement.setAttribute('data-theme', 'light');
+        localStorage.setItem('theme', 'light');
+
+        // Theme Toggle Function
+        function toggleTheme() {
+            const body = document.documentElement;
+            const themeToggle = document.querySelector('.theme-toggle i');
+            
+            if (body.getAttribute('data-theme') === 'light') {
+                body.removeAttribute('data-theme');
+                themeToggle.classList.replace('fa-moon', 'fa-sun');
+                localStorage.setItem('theme', 'dark');
+            } else {
+                body.setAttribute('data-theme', 'light');
+                themeToggle.classList.replace('fa-sun', 'fa-moon');
+                localStorage.setItem('theme', 'light');
+            }
+        }
+
+        // Always set light theme on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            document.documentElement.setAttribute('data-theme', 'light');
+            const themeToggle = document.querySelector('.theme-toggle i');
+            themeToggle.classList.replace('fa-sun', 'fa-moon');
+            localStorage.setItem('theme', 'light');
+        });
+
+        function password_alert() {
+            alert("Please check your mail for ariths@arithwise.com");
+        }
+
+        function reset_alert(event) {
+            if (event) event.preventDefault();
+            document.getElementById('resetPromptModal').style.display = 'flex';
+            document.getElementById('resetPromptInput').value = '';
+            document.getElementById('resetPromptError').style.display = 'none';
+            setTimeout(() => { document.getElementById('resetPromptInput').focus(); }, 100);
+        }
+
+        function closeResetPrompt() {
+            document.getElementById('resetPromptModal').style.display = 'none';
+        }
+
+        function submitResetPrompt() {
+            const errorDiv = document.getElementById('resetPromptError');
+            let email = document.getElementById('resetPromptInput').value;
+
+            if (!email || !email.includes('@')) {
+                errorDiv.textContent = "Please enter a valid email address.";
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            // Clear previous errors
+            errorDiv.style.display = 'none';
+
+            // Show loader and disable buttons
+            const loader = document.getElementById('resetPromptLoader');
+            const modal = document.getElementById('resetPromptModal');
+            const buttons = modal.querySelectorAll('.btn');
+            loader.style.display = 'block';
+            buttons.forEach(button => button.disabled = true);
+
+            // Send email via backend and then show verification modal
+            fetch('/send_reset_password_email', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email: email })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    closeResetPrompt(); // Close the prompt modal
+                    document.getElementById('verificationModal').style.display = 'flex';
+                    // Clear any previous code inputs
+                    for (let i = 1; i <= 6; i++) {
+                        document.getElementById(`code${i}`).value = '';
+                    }
+                    document.getElementById('verificationError').style.display = 'none';
+                    localStorage.setItem('resetEmail', email); // Store email for verification
+                } else {
+                    // Display error from backend
+                    errorDiv.textContent = data.message || 'An unknown error occurred.';
+                    errorDiv.style.display = 'block';
+                }
+            })
+            .catch(error => {
+                console.error('Error sending reset email:', error);
+                errorDiv.textContent = 'An unexpected error occurred while sending the reset email.';
+                errorDiv.style.display = 'block';
+            })
+            .finally(() => {
+                // Hide loader and re-enable buttons
+                loader.style.display = 'none';
+                buttons.forEach(button => button.disabled = false);
+            });
+        }
+
+        function closeVerificationModal() {
+            document.getElementById('verificationModal').style.display = 'none';
+        }
+
+        function submitVerificationCode() {
+            const codeInputs = document.querySelectorAll('.code-input');
+            let enteredCode = '';
+            codeInputs.forEach(input => {
+                enteredCode += input.value;
+            });
+
+            const resetEmail = localStorage.getItem('resetEmail');
+
+            if (enteredCode.length !== 6 || !resetEmail) {
+                document.getElementById('verificationError').style.display = 'block';
+                return;
+            }
+
+            // Send verification code to backend
+            fetch('/verify_reset_code', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email: resetEmail, code: enteredCode })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Verified');
+                    closeVerificationModal();
+                    // localStorage.removeItem('resetEmail'); // Keep email stored
+                    // TODO: Handle post-verification flow without immediate redirect
+                    document.getElementById('resetPasswordModal').style.display = 'flex';
+                    document.getElementById('newPasswordInput').value = '';
+                    document.getElementById('confirmPasswordInput').value = '';
+                    document.getElementById('resetPasswordError').style.display = 'none';
+                    validatePasswordStrength(); // Initialize validation feedback
+                } else {
+                    document.getElementById('verificationError').style.display = 'block';
+                }
+            })
+            .catch(error => {
+                console.error('Error verifying code:', error);
+                alert('An unexpected error occurred during verification.');
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const codeInputs = document.querySelectorAll('.verification-inputs .code-input');
+            codeInputs.forEach((input, index) => {
+                input.addEventListener('input', (e) => {
+                    // Move to next input
+                    if (e.target.value.length === e.target.maxLength && index < codeInputs.length - 1) {
+                        codeInputs[index + 1].focus();
+                    }
+                    // Clear error message on input
+                    document.getElementById('verificationError').style.display = 'none';
+                });
+
+                input.addEventListener('keydown', (e) => {
+                    // Move to previous input on backspace if current is empty
+                    if (e.key === 'Backspace' && e.target.value === '' && index > 0) {
+                        codeInputs[index - 1].focus();
+                    }
+                });
+            });
+        });
+
+        document.addEventListener('DOMContentLoaded', function () {
+            window.goToAddUser = function () {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '/add_user';
+                document.body.appendChild(form);
+                form.submit();
+            }
+
+            const employeeBtn = document.getElementById('employeeBtn');
+            const adminBtn = document.getElementById('adminBtn');
+            const addUserBtn = document.getElementById('addUserBtn');
+
+            // Function to update button states
+            function updateRoleButtonStates() {
+                const addUserSection = document.querySelector('.add-user-section');
+                const rememberForgotSection = document.querySelector('.remember-forgot');
+                const signInButton = document.querySelector('.btn.btn-primary');
+
+                if (employeeBtn.classList.contains('active')) {
+                    if (addUserSection) {
+                        addUserSection.style.display = 'none';
+                    }
+                    if (rememberForgotSection) {
+                        rememberForgotSection.style.display = 'flex'; // Or 'block' depending on original display
+                    }
+                    if (signInButton) {
+                        signInButton.style.display = 'block';
+                    }
+                } else if (adminBtn.classList.contains('active')) {
+                    if (addUserSection) {
+                        addUserSection.style.display = 'block'; 
+                    }
+                    if (rememberForgotSection) {
+                        rememberForgotSection.style.display = 'none';
+                    }
+                    if (signInButton) {
+                        signInButton.style.display = 'none';
+                    }
+                }
+            }
+
+            // Initial state on page load
+            updateRoleButtonStates();
+
+            employeeBtn.addEventListener('click', () => {
+                employeeBtn.classList.add('active');
+                adminBtn.classList.remove('active');
+                updateRoleButtonStates();
+            });
+
+            adminBtn.addEventListener('click', () => {
+                adminBtn.classList.add('active');
+                employeeBtn.classList.remove('active');
+                updateRoleButtonStates();
+            });
+        });
+
+        // Toggle password visibility
+        function togglePassword() {
+            const passwordInput = document.getElementById('password');
+            const toggleIcon = document.querySelector('.toggle-password i');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                toggleIcon.classList.replace('fa-eye', 'fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                toggleIcon.classList.replace('fa-eye-slash', 'fa-eye');
+            }
+        }
+
+        // Add multiple comets
+        function createComets() {
+            const cosmicBg = document.querySelector('.cosmic-bg');
+            
+            for (let i = 0; i < 3; i++) {
+                const comet = document.createElement('div');
+                comet.className = 'cosmic-comet';
+                comet.style.top = `${Math.random() * 100}%`;
+                comet.style.left = `${Math.random() * 100}%`;
+                comet.style.animationDelay = `${Math.random() * 15}s`;
+                comet.style.animationDuration = `${15 + Math.random() * 15}s`;
+                cosmicBg.appendChild(comet);
+            }
+        }
+
+        createComets();
+
+        // DOM Elements
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const addUserBtn = document.getElementById('addUserBtn');
+        const loginForm = document.getElementById('loginForm');
+        const emailError = document.getElementById('emailError');
+
+        // Admin credentials (for demo only - in production use server-side validation)
+        const ADMIN_EMAIL = "admin@arithwise.com";
+        const ADMIN_PASSWORD = "Admin@010124";
+
+        // Real-time validation
+        emailInput.addEventListener('input', validateEmail);
+        passwordInput.addEventListener('input', checkAdminCredentials);
+
+        function validateEmail() {
+            const email = emailInput.value;
+            const isValid = email.endsWith('@arithwise.com');
+            
+            if (email && !isValid) {
+                emailError.style.display = 'block';
+            } else {
+                emailError.style.display = 'none';
+            }
+            
+            checkAdminCredentials();
+        }
+
+        function checkAdminCredentials() {
+            const email = emailInput.value;
+            const password = passwordInput.value;
+            
+            if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+                addUserBtn.disabled = false;
+                addUserBtn.classList.add('admin-active');
+                addUserBtn.title = 'Click to add new user';
+            } else {
+                addUserBtn.disabled = true;
+                addUserBtn.classList.remove('admin-active');
+                addUserBtn.title = 'Admin access required';
+            }
+        }
+
+        // Restore email if remembered
+        window.addEventListener('DOMContentLoaded', () => {
+            const rememberedEmail = localStorage.getItem('rememberedEmail');
+            const rememberedPassword = localStorage.getItem('rememberedPassword');
+            if (rememberedEmail) {
+                emailInput.value = rememberedEmail;
+                passwordInput.value = rememberedPassword;
+                document.getElementById('remember').checked = true;
+                validateEmail();
+                checkAdminCredentials();
+            }
+        });
+
+        // Form submission
+        loginForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const email = emailInput.value;
+            const password = passwordInput.value;
+
+            // Validate email format
+            if (!email.endsWith('@arithwise.com')) {
+                emailError.style.display = 'block';
+                return;
+            }
+
+            // Show loading state
+            const submitBtn = loginForm.querySelector('button[type="submit"]');
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing In...';
+            submitBtn.disabled = true;
+
+            // Save email if remember me is checked
+            const rememberCheckbox = document.getElementById('remember');
+            if (rememberCheckbox.checked) {
+                localStorage.setItem('rememberedEmail', email);
+                localStorage.setItem('rememberedPassword', password);
+            } else {
+                localStorage.removeItem('rememberedEmail');
+                localStorage.removeItem('rememberedPassword');
+            }
+
+            simulateLogin(email, password);
+
+            fetch('/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`
+            })
+            .then(response => {
+                if (response.ok) {
+                    window.location.href = '/tools';
+                } else {
+                    alert('Login failed. Invalid email or password.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                submitBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Sign In';
+                submitBtn.disabled = false;
+            });
+        });
+
+        function simulateLogin(email, password) {
+            // Simulate API delay
+            setTimeout(() => {
+                const submitBtn = loginForm.querySelector('button[type="submit"]');
+                submitBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Sign In';
+                submitBtn.disabled = false;
+            }, 1500);
+        }
+
+        // Role toggle button logic
+        document.addEventListener('DOMContentLoaded', function () {
+            const userBtn = document.getElementById('employeeBtn');
+            const adminBtn = document.getElementById('adminBtn');
+            userBtn.addEventListener('click', function() {
+                userBtn.classList.add('active');
+                adminBtn.classList.remove('active');
+            });
+            adminBtn.addEventListener('click', function() {
+                adminBtn.classList.add('active');
+                userBtn.classList.remove('active');
+            });
+        });
+
+        function closeResetPasswordModal() {
+            document.getElementById('resetPasswordModal').style.display = 'none';
+        }
+
+        function saveNewPassword() {
+            const errorDiv = document.getElementById('resetPasswordError');
+
+            // Perform final validation using the same logic as real-time feedback
+            const isFormValid = validatePasswordStrength();
+
+            if (!isFormValid) {
+                errorDiv.textContent = 'Please meet all password requirements and ensure passwords match.';
+                errorDiv.style.display = 'block';
+                return;
+            }
+            
+            errorDiv.style.display = 'none';
+            closeResetPasswordModal();
+            
+            // Send new password to backend
+            const newPassword = document.getElementById('newPasswordInput').value;
+            fetch('/reset_password', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email: localStorage.getItem('resetEmail'), password: newPassword })
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert('Password updated successfully!');
+                // TODO: Handle post-reset flow without immediate redirect
+            })
+            .catch(error => {
+                console.error('Error resetting password:', error);
+                alert('An unexpected error occurred while resetting the password.');
+            });
+        }
+
+        // Password strength validation for Reset Password Modal
+        function validatePasswordStrength() {
+            const newPassword = document.getElementById('newPasswordInput').value;
+            const confirmPassword = document.getElementById('confirmPasswordInput').value;
+
+            const lengthCheck = document.getElementById('lengthCheck');
+            const upperCaseCheck = document.getElementById('upperCaseCheck');
+            const specialCharCheck = document.getElementById('specialCharCheck');
+
+            // Rules
+            const isLengthValid = newPassword.length >= 6 && newPassword.length <= 24;
+            const hasUpperCase = /[A-Z]/.test(newPassword);
+            const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>/?~]/.test(newPassword);
+            const passwordsMatch = newPassword === confirmPassword; // Keep this for internal check against confirm password
+
+            // Update feedback for each rule
+            updateValidationFeedback(lengthCheck, isLengthValid);
+            updateValidationFeedback(upperCaseCheck, hasUpperCase);
+            updateValidationFeedback(specialCharCheck, hasSpecialChar);
+
+            // Determine overall validity
+            const overallValid = isLengthValid && hasUpperCase && hasSpecialChar && passwordsMatch;
+
+            // Enable/disable Save button based on overall validity
+            const saveButton = document.getElementById('savePasswordButton');
+            if (saveButton) {
+                saveButton.disabled = !overallValid;
+            }
+
+            return overallValid;
+        }
+
+        // Helper function to update validation feedback
+        function updateValidationFeedback(element, isValid) {
+            if (isValid) {
+                element.innerHTML = '&#10003;'; // Checkmark
+                element.style.color = 'green';
+            } else {
+                element.innerHTML = '&#10007;'; // Cross mark
+                element.style.color = 'red';
+            }
+        }
+
+        // Attach real-time validation to password inputs
+        document.addEventListener('DOMContentLoaded', () => {
+            const newPasswordInput = document.getElementById('newPasswordInput');
+            const confirmPasswordInput = document.getElementById('confirmPasswordInput');
+
+            if (newPasswordInput) {
+                newPasswordInput.addEventListener('input', validatePasswordStrength);
+            }
+            if (confirmPasswordInput) {
+                confirmPasswordInput.addEventListener('input', validatePasswordStrength);
+            }
+        });
+    </script>
+</body>
+</html>

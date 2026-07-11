@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="../static/css/dashboard.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="dashboard-header">
+            <div class="header-left">
+                <div class="header-titles">
+                    <h1>DASHBOARD</h1>
+                </div>
+            </div>
+            <div class="header-right">
+                <a href="/" class="logout-button" onclick="destroySession()">
+                    <!-- ➡ Logout -->
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            </div>
+        </header>
+        <section class="kpi-cards">
+            <div class="card card-1">
+                <div class="icon">👥</div>
+                <div class="details">
+                    <div class="label">Total Employees</div>
+                    <div class="value">{{TOTAL_EMPLOYEES}}</div>
+                </div>
+            </div>
+            <!-- <div class="card card-2">
+                <div class="icon">🧍</div>
+                <div class="details">
+                    <div class="label">Total User</div>
+                    <div class="value">{{TOTAL_USERS}}</div>
+                </div>
+            </div>
+            <div class="card card-3">
+                <div class="icon">🔑</div>
+                <div class="details">
+                    <div class="label">Total Admin</div>
+                    <div class="value">{{TOTAL_ADMINS}}</div>
+                </div>
+            </div>
+            <div class="card card-4">
+                <div class="icon">⚙️</div>
+                <div class="details">
+                    <div class="label">Total Super Admin</div>
+                    <div class="value">{{TOTAL_SUPER_ADMINS}}</div>
+                </div>
+            </div> -->
+            <div class="card card-5">
+                <div class="icon">🔧</div>
+                <div class="details">
+                    <div class="label">Total Tools</div>
+                    <div class="value">{{TOTAL_TOOLS}}</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="charts-section">
+
+            <div class="employee-search-container">
+                <input type="text" id="employee-search-input" placeholder="Search Employee">
+                <div id="employee-suggestions" class="suggestions-list"></div>
+            </div>
+    
+            <div class="chart-card employee-details-card" style="display: none;">
+                <div class="employee-details-header">
+                    <h2>EMPLOYEE :</h2>
+                    <div class="employee-name"></div>
+                    <button id="saveAccessBtn" class="edit-employee-button">Save</button>
+                </div>
+                <div class="tool-access-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Tool</th>
+                                <th>Access</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Employee tool access rows will be added here by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="chart-card sales-performance">
+                <h2>ACCESS GRAPH</h2>
+                <div class="chart-title">ACCESS TYPE COUNT</div>
+                <div class="chart-placeholder chart-canvas-container">
+                    <!-- Placeholder for Revenue by Month chart -->
+                    <!-- <p>Revenue by Month Chart Placeholder</p> -->
+                    <canvas id="toolUsageChart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-card region-performance">
+                <h2>TOOLS GRAPH</h2>
+                <div class="chart-title">TOOLS COUNT</div>
+                <div class="chart-placeholder chart-canvas-container">
+                    <!-- Placeholder for Region Performance chart -->
+                    <!-- <p>Region Performance Chart Placeholder</p> -->
+                    <canvas id="toolAccessChart"></canvas>
+                </div>
+            </div>
+
+        </section>
+    </div>
+    <!-- Container for access options popup -->
+    <div id="access-options-popup" style="display: none; position: absolute; background-color: white; border: 1px solid #ccc; padding: 10px; border-radius: 5px; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); z-index: 20;">
+        <div class="option" data-access="User" style="padding: 5px; cursor: pointer;">User</div>
+        <div class="option" data-access="Admin" style="padding: 5px; cursor: pointer;">Admin</div>
+        <div class="option" data-access="Super Admin" style="padding: 5px; cursor: pointer;">Super Admin</div>
+    </div>
+
+    <script type="">
+        const employeeStats = {
+            TOTAL_EMPLOYEES: {{ TOTAL_EMPLOYEES|tojson }},
+            TOTAL_USERS: {{ TOTAL_USERS|tojson }},
+            TOTAL_ADMINS: {{ TOTAL_ADMINS|tojson }},
+            TOTAL_SUPER_ADMINS: {{ TOTAL_SUPER_ADMINS|tojson }},
+            TOTAL_TOOLS: {{ TOTAL_TOOLS|tojson }}
+        };
+        
+        let total_employees = employeeStats.TOTAL_EMPLOYEES;
+        let total_users = employeeStats.TOTAL_USERS;
+        let total_admins = employeeStats.TOTAL_ADMINS;
+        let total_super_admins = employeeStats.TOTAL_SUPER_ADMINS;
+        let total_tools = employeeStats.TOTAL_TOOLS;
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="../static/dashboard/chart.js"></script>
+</body>
+</html>
+ 
