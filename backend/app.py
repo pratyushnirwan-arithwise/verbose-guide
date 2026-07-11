@@ -59,20 +59,156 @@ def get_db_connection():
 def connect_hrms():
     return psycopg2.connect(
         dbname="HRMS",
-        user="postgres",
-        password=os.getenv("POSTGRES_PASSWORD", "Arithwise@010124"),
-        host="localhost",
+        user=DB_CONFIG.get("user", "postgres"),
+        password=os.getenv("POSTGRES_PASSWORD", DB_CONFIG.get("password", "Arithwise@010124")),
+        host=DB_CONFIG.get("host", "localhost"),
+        port=DB_CONFIG.get("port", "5432"),
     )
 
 
 def connect_trueday():
     return psycopg2.connect(
         dbname="TRUEDAY",
-        user="postgres",
-        password=os.getenv("POSTGRES_PASSWORD", "Arithwise@010124"),
-        host="localhost",
-        port="5432",
+        user=DB_CONFIG.get("user", "postgres"),
+        password=os.getenv("POSTGRES_PASSWORD", DB_CONFIG.get("password", "Arithwise@010124")),
+        host=DB_CONFIG.get("host", "localhost"),
+        port=DB_CONFIG.get("port", "5432"),
     )
+
+
+def init_databases():
+    # 1. Ensure databases exist
+    def ensure_db_exists(db_name, db_config):
+        config_postgres = db_config.copy()
+        config_postgres['dbname'] = 'postgres'
+        conn = None
+        try:
+            conn = psycopg2.connect(**config_postgres)
+            conn.autocommit = True
+            with conn.cursor() as cur:
+                cur.execute("SELECT 1 FROM pg_database WHERE datname = %s", (db_name,))
+                if not cur.fetchone():
+                    cur.execute(f'CREATE DATABASE "{db_name}"')
+        except Exception as exc:
+            print(f"Error ensuring database {db_name} exists: {exc}")
+        finally:
+            if conn:
+                conn.close()
+
+    # Get configs
+    main_db = DB_CONFIG.get("dbname", "ariths")
+    hrms_config = {
+        "dbname": "HRMS",
+        "user": DB_CONFIG.get("user", "postgres"),
+        "password": os.getenv("POSTGRES_PASSWORD", DB_CONFIG.get("password", "Arithwise@010124")),
+        "host": DB_CONFIG.get("host", "localhost"),
+        "port": DB_CONFIG.get("port", "5432"),
+    }
+    trueday_config = {
+        "dbname": "TRUEDAY",
+        "user": DB_CONFIG.get("user", "postgres"),
+        "password": os.getenv("POSTGRES_PASSWORD", DB_CONFIG.get("password", "Arithwise@010124")),
+        "host": DB_CONFIG.get("host", "localhost"),
+        "port": DB_CONFIG.get("port", "5432"),
+    }
+
+    # Ensure all databases exist
+    ensure_db_exists(main_db, DB_CONFIG)
+    ensure_db_exists("HRMS", hrms_config)
+    ensure_db_exists("TRUEDAY", trueday_config)
+
+    # 2. Initialize tables in main database (ariths)
+    try:
+        conn = psycopg2.connect(**DB_CONFIG)
+        with conn.cursor() as cur:
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS users (
+                    user_id SERIAL PRIMARY KEY,
+                    first_name VARCHAR(100) NOT NULL,
+                    last_name VARCHAR(100) NOT NULL,
+                    email VARCHAR(255) UNIQUE NOT NULL,
+                    password VARCHAR(255) NOT NULL
+                );
+            """)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS tools (
+                    tool_id SERIAL PRIMARY KEY,
+                    name VARCHAR(100) UNIQUE NOT NULL,
+                    description TEXT,
+                    href VARCHAR(255),
+                    logo_name VARCHAR(100),
+                    color_gradient VARCHAR(255)
+                );
+            """)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS accesses (
+                    access_id SERIAL PRIMARY KEY,
+                    user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+                    tool_id INTEGER REFERENCES tools(tool_id) ON DELETE CASCADE,
+                    access_type VARCHAR(50) NOT NULL,
+                    UNIQUE(user_id, tool_id)
+                );
+            """)
+            
+            # Seed tools if they do not exist
+            cur.execute("SELECT 1 FROM tools WHERE name = 'ARITHSHIVE'")
+            if not cur.fetchone():
+                cur.execute(
+                    "INSERT INTO tools (name, description, href, logo_name, color_gradient) VALUES (%s, %s, %s, %s, %s)",
+                    ("ARITHSHIVE", "HRMS system for Ariths employees", "http://localhost:5550/api/sso/hrms", "Users", "from-blue-500 to-indigo-600")
+                )
+            cur.execute("SELECT 1 FROM tools WHERE name = 'TRUEDAY'")
+            if not cur.fetchone():
+                cur.execute(
+                    "INSERT INTO tools (name, description, href, logo_name, color_gradient) VALUES (%s, %s, %s, %s, %s)",
+                    ("TRUEDAY", "Project Management and tracking tool", "http://localhost:5550/api/sso/trueday", "Calendar", "from-teal-500 to-emerald-600")
+                )
+        conn.commit()
+        conn.close()
+    except Exception as exc:
+        print(f"Error initializing ariths database tables: {exc}")
+
+    # 3. Initialize tables in HRMS
+    try:
+        conn = psycopg2.connect(**hrms_config)
+        with conn.cursor() as cur:
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS employee (
+                    emp_id INTEGER PRIMARY KEY,
+                    first_name VARCHAR(100) NOT NULL,
+                    last_name VARCHAR(100) NOT NULL,
+                    email VARCHAR(255) UNIQUE NOT NULL,
+                    password VARCHAR(255) NOT NULL,
+                    category VARCHAR(50) NOT NULL
+                );
+            """)
+        conn.commit()
+        conn.close()
+    except Exception as exc:
+        print(f"Error initializing HRMS database tables: {exc}")
+
+    # 4. Initialize tables in TRUEDAY
+    try:
+        conn = psycopg2.connect(**trueday_config)
+        with conn.cursor() as cur:
+            cur.execute("CREATE SCHEMA IF NOT EXISTS trueday;")
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS trueday.users (
+                    id INTEGER PRIMARY KEY,
+                    username VARCHAR(255) NOT NULL,
+                    email VARCHAR(255) UNIQUE NOT NULL,
+                    password VARCHAR(255) NOT NULL,
+                    role VARCHAR(50) NOT NULL
+                );
+            """)
+        conn.commit()
+        conn.close()
+    except Exception as exc:
+        print(f"Error initializing TRUEDAY database tables: {exc}")
+
+
+init_databases()
+
 
 
 def send_email(recipient_email, subject, html_body):
