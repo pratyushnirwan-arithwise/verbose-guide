@@ -1066,5 +1066,49 @@ def logout():
     return jsonify({"success": True})
 
 
+@app.get("/api/sso/trueday")
+def sso_trueday():
+    import hmac
+    import hashlib
+    import base64
+    import time
+    
+    if "user_id" not in session:
+        return jsonify({"success": False, "message": "Unauthorized"}), 401
+        
+    user_id = session["user_id"]
+    
+    # Get user's role for TRUEDAY
+    access_type = "User"
+    for tool in session.get("user_tools", []):
+        if tool.get("tool_name") == "TRUEDAY":
+            access_type = tool.get("access_type")
+            break
+            
+    # Generate token: user_id:timestamp:access_type
+    timestamp = str(int(time.time()))
+    data = f"{user_id}:{timestamp}:{access_type}"
+    
+    trueday_secret = os.getenv("TRUEDAY_SECRET_KEY", "Maitreya@010125")
+    
+    signature = hmac.new(
+        trueday_secret.encode(),
+        data.encode(),
+        hashlib.sha256
+    ).hexdigest()
+    
+    secure_token = base64.b64encode(f"{data}:{signature}".encode()).decode()
+    
+    trueday_base_url = os.getenv("TRUEDAY_BASE_URL", "https://trueday.ariths.com")
+    redirect_url = f"{trueday_base_url}/?token={secure_token}#/dashboard"
+    
+    return jsonify({
+        "success": True,
+        "redirect_url": redirect_url
+    })
+
+
+
+
 if __name__ == "__main__":
     app.run(port=5550, debug=True)

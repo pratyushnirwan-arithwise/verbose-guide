@@ -116,9 +116,23 @@ export default function ToolsPage() {
                 <TextButton
                   type="button"
                   className={`w-auto bg-gradient-to-r ${tool.color_gradient || "from-slate-500 to-slate-600"} hover:brightness-95`}
-                  onClick={() => {
-                    const href = getHref(tool.href, state.user_id, tool.access_type);
-                    if (href) window.open(href, "_blank", "noreferrer");
+                  onClick={async () => {
+                    if (tool.tool_name === "TRUEDAY") {
+                      try {
+                        const data = await api("/api/sso/trueday");
+                        if (data.success && data.redirect_url) {
+                          window.open(data.redirect_url, "_blank", "noreferrer");
+                        } else {
+                          alert("Failed to initiate secure SSO session");
+                        }
+                      } catch (err) {
+                        console.error("SSO Error:", err);
+                        alert("An error occurred during SSO authentication");
+                      }
+                    } else {
+                      const href = getHref(tool.href, state.user_id, tool.access_type);
+                      if (href) window.open(href, "_blank", "noreferrer");
+                    }
                   }}
                 >
                   Get Started <ArrowRight size={18} />
