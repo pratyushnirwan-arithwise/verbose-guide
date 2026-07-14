@@ -46,7 +46,7 @@ export default function SelfSignup() {
   }
 
   return (
-    <div className="min-h-screen w-full bg-slate-950 flex flex-col justify-center items-center p-4 selection:bg-purple-500 selection:text-white">
+    <div className="dark min-h-screen w-full bg-slate-950 flex flex-col justify-center items-center p-4 selection:bg-purple-500 selection:text-white">
       {/* Subtle background glow */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-purple-600/20 rounded-full blur-[140px]" />
@@ -85,14 +85,12 @@ export default function SelfSignup() {
                 label="First Name"
                 value={form.firstName}
                 onChange={(val) => setForm({ ...form, firstName: val })}
-                placeholder="John"
                 required
               />
               <Input
                 label="Last Name"
                 value={form.lastName}
                 onChange={(val) => setForm({ ...form, lastName: val })}
-                placeholder="Doe"
                 required
               />
             </div>
@@ -102,7 +100,6 @@ export default function SelfSignup() {
               type="email"
               value={form.userEmail}
               onChange={(val) => setForm({ ...form, userEmail: val })}
-              placeholder="name@arithwise.com"
               required
             />
 
@@ -112,7 +109,6 @@ export default function SelfSignup() {
                 type="password"
                 value={form.userPassword}
                 onChange={(val) => setForm({ ...form, userPassword: val })}
-                placeholder="••••••••"
                 required
               />
               <Input
@@ -120,7 +116,6 @@ export default function SelfSignup() {
                 type="password"
                 value={form.confirmPassword}
                 onChange={(val) => setForm({ ...form, confirmPassword: val })}
-                placeholder="••••••••"
                 required
               />
             </div>

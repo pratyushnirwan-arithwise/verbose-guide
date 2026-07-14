@@ -403,7 +403,6 @@ export default function Login() {
                 value={form.email}
                 onChange={(event) => setForm({ ...form, email: event.target.value })}
                 className="field"
-                placeholder="admin@arithwise.com"
                 required
               />
             </div>
@@ -424,7 +423,6 @@ export default function Login() {
                   ? "border-rose-500 bg-rose-50/10 focus:border-rose-500 animate-shake"
                   : ""
                   }`}
-                placeholder="••••••••••••"
                 required
               />
               <IconButton
@@ -499,7 +497,6 @@ export default function Login() {
                     type="email"
                     value={reset.email}
                     onChange={(event) => setReset({ ...reset, email: event.target.value })}
-                    placeholder="name@arithwise.com"
                     required
                   />
                 </div>
@@ -593,7 +590,6 @@ export default function Login() {
                       type="password"
                       value={reset.password}
                       onChange={(event) => setReset({ ...reset, password: event.target.value })}
-                      placeholder="Enter new password"
                       required
                     />
                   </div>
@@ -611,7 +607,6 @@ export default function Login() {
                       type="password"
                       value={reset.confirm}
                       onChange={(event) => setReset({ ...reset, confirm: event.target.value })}
-                      placeholder="Confirm new password"
                       required
                     />
                   </div>
