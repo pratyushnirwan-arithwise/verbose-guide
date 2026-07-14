@@ -831,6 +831,71 @@ def delete_access():
         conn.close()
 
 
+@app.post("/api/delete_user")
+def delete_user():
+    auth_error = require_superadmin()
+    if auth_error:
+        return auth_error
+
+    data = request.get_json(silent=True) or {}
+    full_name = data.get("employee", "").strip().lower()
+    if not full_name:
+        return jsonify({"success": False, "message": "Invalid employee name provided"}), 400
+
+    conn = get_db_connection()
+    hrms_conn = None
+    trueday_conn = None
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT user_id FROM users WHERE LOWER(first_name || ' ' || last_name) = %s",
+                (full_name,),
+            )
+            user_row = cur.fetchone()
+            if not user_row:
+                return jsonify({"success": False, "message": f"User '{full_name}' not found"}), 404
+            
+            user_id = user_row[0]
+
+            # Delete from accesses and users in main db
+            cur.execute("DELETE FROM accesses WHERE user_id = %s", (user_id,))
+            cur.execute("DELETE FROM users WHERE user_id = %s", (user_id,))
+
+        # Delete from TRUEDAY db
+        try:
+            trueday_conn = connect_trueday()
+            with trueday_conn.cursor() as t_cur:
+                t_cur.execute("DELETE FROM trueday.users WHERE id = %s", (user_id,))
+            trueday_conn.commit()
+        except Exception as exc:
+            if trueday_conn:
+                trueday_conn.rollback()
+            print(f"Warning deleting from TRUEDAY: {exc}")
+
+        # Delete from HRMS db
+        try:
+            hrms_conn = connect_hrms()
+            with hrms_conn.cursor() as h_cur:
+                h_cur.execute("DELETE FROM employee WHERE emp_id = %s", (user_id,))
+            hrms_conn.commit()
+        except Exception as exc:
+            if hrms_conn:
+                hrms_conn.rollback()
+            print(f"Warning deleting from HRMS: {exc}")
+
+        conn.commit()
+        return jsonify({"success": True, "message": f"User '{full_name}' permanently deleted."})
+    except Exception as exc:
+        conn.rollback()
+        return jsonify({"success": False, "message": str(exc)}), 500
+    finally:
+        conn.close()
+        if trueday_conn:
+            trueday_conn.close()
+        if hrms_conn:
+            hrms_conn.close()
+
+
 @app.post("/api/admin/bulk_update_access")
 def bulk_update_access():
     auth_error = require_superadmin()

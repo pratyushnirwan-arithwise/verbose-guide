@@ -46,6 +46,9 @@ export default function Dashboard() {
 
   const [isSelectMode, setIsSelectMode] = useState(false);
   const [showEmployeeModal, setShowEmployeeModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [deletingUser, setDeletingUser] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -181,6 +184,36 @@ export default function Dashboard() {
       setMessage("Access saved.");
     } catch (err) {
       setMessage(err.message);
+    }
+  }
+
+  async function handleDeleteUser() {
+    if (deleteConfirmText.toLowerCase() !== selected.toLowerCase()) return;
+    setDeletingUser(true);
+    setMessage("");
+    try {
+      const res = await postJson("/api/delete_user", { employee: selected });
+      if (res.success) {
+        setShowDeleteModal(false);
+        setShowEmployeeModal(false);
+        setSelected("");
+        setDeleteConfirmText("");
+        const [dashboardData, employeesData, detailsData] = await Promise.all([
+          api("/api/dashboard"),
+          api("/api/employees"),
+          api("/api/employees/details")
+        ]);
+        setStats(dashboardData.stats);
+        setEmployees(employeesData);
+        setDetails(detailsData);
+        alert(res.message || "User deleted successfully.");
+      } else {
+        setMessage(res.message || "Failed to delete user.");
+      }
+    } catch (err) {
+      setMessage(err.message || "Failed to delete user.");
+    } finally {
+      setDeletingUser(false);
     }
   }
 
@@ -431,6 +464,19 @@ export default function Dashboard() {
                               </div>
                             );
                           })}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelected(name);
+                              setDeleteConfirmText("");
+                              setShowDeleteModal(true);
+                            }}
+                            title={`Delete ${name}`}
+                            className="ml-1 flex items-center justify-center h-6 w-6 rounded-md border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-400 hover:text-rose-600 hover:border-rose-300 dark:hover:text-rose-400 dark:hover:border-rose-900/50 shadow-sm transition-all"
+                          >
+                            <Trash2 size={13} />
+                          </button>
                         </div>
                       </div>
                     );
@@ -595,6 +641,16 @@ export default function Dashboard() {
                         )}
                         <button
                           type="button"
+                          onClick={() => {
+                            setDeleteConfirmText("");
+                            setShowDeleteModal(true);
+                          }}
+                          className="mr-auto text-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-950/30 font-semibold flex items-center gap-1.5 px-3.5 py-2.5 rounded-lg border border-rose-200 dark:border-rose-900/40 transition-colors text-sm"
+                        >
+                          <Trash2 size={16} /> Delete User
+                        </button>
+                        <button
+                          type="button"
                           className="px-4 py-2.5 rounded-lg text-sm font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-300 dark:hover:text-white dark:hover:bg-slate-850 transition-colors"
                           onClick={() => {
                             setSelected("");
@@ -616,6 +672,69 @@ export default function Dashboard() {
                   </div>
                 );
               })()}
+
+              {/* GitHub-style Confirmation Modal for Deletion */}
+              {showDeleteModal && selected && (
+                <div className="fixed inset-0 z-60 grid place-items-center bg-slate-950/75 p-4 backdrop-blur-sm animate-fade-in">
+                  <div className="w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-900/50 shadow-2xl p-6 animate-scale-in">
+                    <div className="flex items-center gap-3 text-rose-600 dark:text-rose-400 mb-4">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-rose-100 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900/50">
+                        <Trash2 size={20} />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-bold leading-tight text-slate-900 dark:text-white">Delete User Account</h3>
+                        <p className="text-xs text-rose-600 dark:text-rose-400 font-medium">Irreversible action</p>
+                      </div>
+                    </div>
+
+                    <div className="rounded-xl bg-rose-50/50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/30 p-3.5 mb-4 text-xs text-slate-700 dark:text-slate-300 space-y-2">
+                      <p>
+                        You are about to permanently delete <strong className="text-slate-900 dark:text-white font-bold">{selected}</strong> and completely wipe all of their tool accesses across the platform (including TRUEDAY and ARITHSHIVE databases).
+                      </p>
+                      <p className="text-rose-600 dark:text-rose-400 font-semibold">
+                        This action cannot be undone.
+                      </p>
+                    </div>
+
+                    <div className="space-y-2 mb-6">
+                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                        Please type <span className="select-all font-mono bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-rose-600 dark:text-rose-400 border border-slate-200 dark:border-slate-700 font-bold">{selected}</span> to confirm:
+                      </label>
+                      <input
+                        type="text"
+                        value={deleteConfirmText}
+                        onChange={(e) => setDeleteConfirmText(e.target.value)}
+                        placeholder={selected}
+                        autoFocus
+                        className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm text-slate-900 dark:text-white focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-500/20"
+                      />
+                    </div>
+
+                    <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                      <button
+                        type="button"
+                        disabled={deletingUser}
+                        onClick={() => {
+                          setShowDeleteModal(false);
+                          setDeleteConfirmText("");
+                        }}
+                        className="px-4 py-2 text-sm font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        disabled={deleteConfirmText.toLowerCase() !== selected.toLowerCase() || deletingUser}
+                        onClick={handleDeleteUser}
+                        className="px-4 py-2 text-sm font-semibold text-white bg-rose-600 hover:bg-rose-700 disabled:opacity-40 disabled:pointer-events-none rounded-lg shadow-sm transition-all flex items-center gap-1.5"
+                      >
+                        <Trash2 size={16} />
+                        {deletingUser ? "Deleting..." : "I understand the consequences, delete user"}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </>
           ) : (
             /* Tools Registry Manager */
