@@ -506,7 +506,7 @@ def get_employees():
             tools_rows = cur.fetchall()
         return jsonify(
             {
-                "names": [f"{first} {last}" for first, last in employees],
+                "names": [" ".join(f"{first or ''} {last or ''}".split()) for first, last in employees],
                 "tools": [row[0] for row in tools_rows],
             }
         )
@@ -848,8 +848,8 @@ def delete_user():
     try:
         with conn.cursor() as cur:
             cur.execute(
-                "SELECT user_id FROM users WHERE LOWER(first_name || ' ' || last_name) = %s",
-                (full_name,),
+                "SELECT user_id FROM users WHERE LOWER(TRIM(first_name) || ' ' || TRIM(last_name)) = %s OR LOWER(first_name || ' ' || last_name) = %s",
+                (" ".join(full_name.split()), full_name),
             )
             user_row = cur.fetchone()
             if not user_row:

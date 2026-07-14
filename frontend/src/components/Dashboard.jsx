@@ -188,7 +188,7 @@ export default function Dashboard() {
   }
 
   async function handleDeleteUser() {
-    if (deleteConfirmText.toLowerCase() !== selected.toLowerCase()) return;
+    if ((deleteConfirmText || "").replace(/[\s\u00A0\u200B]+/g, " ").trim().toLowerCase() !== (selected || "").replace(/[\s\u00A0\u200B]+/g, " ").trim().toLowerCase()) return;
     setDeletingUser(true);
     setMessage("");
     try {
@@ -473,9 +473,10 @@ export default function Dashboard() {
                               setShowDeleteModal(true);
                             }}
                             title={`Delete ${name}`}
-                            className="ml-1 flex items-center justify-center h-6 w-6 rounded-md border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-400 hover:text-rose-600 hover:border-rose-300 dark:hover:text-rose-400 dark:hover:border-rose-900/50 shadow-sm transition-all"
+                            className="ml-2 flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-rose-200 dark:border-rose-900/60 bg-rose-50/80 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 hover:bg-rose-600 hover:text-white dark:hover:bg-rose-600 dark:hover:text-white shadow-sm transition-all text-xs font-semibold shrink-0"
                           >
-                            <Trash2 size={13} />
+                            <Trash2 size={14} />
+                            <span>Delete</span>
                           </button>
                         </div>
                       </div>
@@ -702,6 +703,7 @@ export default function Dashboard() {
                       </label>
                       <input
                         type="text"
+                        spellCheck="false"
                         value={deleteConfirmText}
                         onChange={(e) => setDeleteConfirmText(e.target.value)}
                         placeholder={selected}
@@ -724,9 +726,9 @@ export default function Dashboard() {
                       </button>
                       <button
                         type="button"
-                        disabled={deleteConfirmText.toLowerCase() !== selected.toLowerCase() || deletingUser}
+                        disabled={(deleteConfirmText || "").replace(/[\s\u00A0\u200B]+/g, " ").trim().toLowerCase() !== (selected || "").replace(/[\s\u00A0\u200B]+/g, " ").trim().toLowerCase() || deletingUser}
                         onClick={handleDeleteUser}
-                        className="px-4 py-2 text-sm font-semibold text-white bg-rose-600 hover:bg-rose-700 disabled:opacity-40 disabled:pointer-events-none rounded-lg shadow-sm transition-all flex items-center gap-1.5"
+                        className="px-4 py-2 text-sm font-semibold text-white bg-rose-600 hover:bg-rose-700 disabled:opacity-40 disabled:pointer-events-none rounded-lg shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
                       >
                         <Trash2 size={16} />
                         {deletingUser ? "Deleting..." : "I understand the consequences, delete user"}
