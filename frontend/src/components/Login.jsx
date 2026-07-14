@@ -1,9 +1,13 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Eye, EyeOff, Mail, Lock, Users, BarChart3, Wrench, UserPlus, KeyRound, ShieldCheck } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, Users, BarChart3, Wrench, UserPlus, KeyRound, ShieldCheck, Sun, Moon } from "lucide-react";
 import { postJson, api } from "../api";
 import Shell from "./Shell";
 import { IconButton, TextButton, Modal, Rule } from "./UIComponents";
+import DynamicIcon from "./DynamicIcon";
+import LightPillar from "./reactbits/LightPillar";
+import OrbitalSphere from "./OrbitalSphere";
+
 
 const gridCells = [
   { row: 0, col: 0 }, { row: 0, col: 2 }, { row: 0, col: 1 }, { row: 0, col: 3 },
@@ -14,8 +18,22 @@ const gridCells = [
 
 export default function Login() {
   const navigate = useNavigate();
+  const [theme, setTheme] = useState(() => localStorage.getItem("theme") || "light");
+
+  useEffect(() => {
+    if (theme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+    localStorage.setItem("theme", theme);
+  }, [theme]);
+
+  const toggleTheme = () => setTheme(prev => (prev === "light" ? "dark" : "light"));
+
   const [mode, setMode] = useState("login");
   const [showPassword, setShowPassword] = useState(false);
+
   const [form, setForm] = useState(() => ({
     email: localStorage.getItem("rememberedEmail") || "",
     password: localStorage.getItem("rememberedPassword") || "",
@@ -29,6 +47,76 @@ export default function Login() {
   const [greenCascadeIdx, setGreenCascadeIdx] = useState(-1);
   const [otpError, setOtpError] = useState(false);
   const [bgTools, setBgTools] = useState([]);
+  const [activeHighlightIndex, setActiveHighlightIndex] = useState(0);
+
+  const TAILWIND_COLOR_MAP = {
+    blue: { 500: "#3b82f6", 600: "#2563eb" },
+    indigo: { 500: "#6366f1", 600: "#4f46e5" },
+    teal: { 500: "#14b8a6", 600: "#0d9488" },
+    emerald: { 500: "#10b981", 600: "#059669" },
+    violet: { 500: "#8b5cf6", 600: "#7c3aed" },
+    purple: { 500: "#a855f7", 600: "#9333ea" },
+    amber: { 500: "#f59e0b", 600: "#d97706" },
+    orange: { 500: "#f97316", 600: "#ea580c" },
+    rose: { 500: "#f43f5e", 600: "#e11d48" },
+    red: { 500: "#ef4444", 600: "#dc2626" },
+    sky: { 500: "#0ea5e9", 600: "#0284c7" },
+    lime: { 500: "#84cc16", 600: "#65a30d" },
+    cyan: { 500: "#06b6d4", 600: "#0891b2" },
+    slate: { 500: "#64748b", 600: "#475569" },
+    gray: { 500: "#9ca3af", 600: "#4b5563" },
+    fuchsia: { 500: "#d946ef", 600: "#c084fc" },
+    yellow: { 500: "#eab308", 600: "#ca8a04" }
+  };
+
+  function parseTailwindGradient(grad = "") {
+    const fromMatch = grad.match(/from-([a-z]+)-(\d+)/i);
+    const toMatch = grad.match(/to-([a-z]+)-(\d+)/i);
+
+    const fromColorName = fromMatch ? fromMatch[1] : "slate";
+    const fromWeight = fromMatch ? fromMatch[2] : "500";
+    const toColorName = toMatch ? toMatch[1] : "slate";
+    const toWeight = toMatch ? toMatch[2] : "600";
+
+    const getHex = (name, weight) => {
+      const pal = TAILWIND_COLOR_MAP[name] || TAILWIND_COLOR_MAP.slate;
+      return pal[weight] || pal[500];
+    };
+
+    const c1 = getHex(fromColorName, fromWeight);
+    const c2 = getHex(toColorName, toWeight);
+
+    const hexToRgba = (hex, alpha) => {
+      const r = parseInt(hex.slice(1, 3), 16);
+      const g = parseInt(hex.slice(3, 5), 16);
+      const b = parseInt(hex.slice(5, 7), 16);
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    };
+
+    return {
+      from: c1,
+      to: c2,
+      bg: `linear-gradient(135deg, ${hexToRgba(c1, 0.08)}, ${hexToRgba(c2, 0.12)})`,
+      hoverBg: `linear-gradient(135deg, ${hexToRgba(c1, 0.15)}, ${hexToRgba(c2, 0.22)})`,
+      border: hexToRgba(c1, 0.3),
+      hoverBorder: hexToRgba(c1, 0.55),
+      accent: c1,
+      dot: c1,
+      glow: hexToRgba(c1, 0.35),
+      glowBright: hexToRgba(c1, 0.25),
+      iconBg: `linear-gradient(135deg, ${hexToRgba(c1, 0.18)}, ${hexToRgba(c2, 0.12)})`
+    };
+  }
+
+  const finalNodes = bgTools.map((t) => ({
+    name: t.name,
+    logo_name: t.logo_name || "Globe",
+    color_gradient: t.color_gradient || "",
+    colors: parseTailwindGradient(t.color_gradient || ""),
+  }));
+
+
+
 
   const otpRefs = [
     useRef(null),
@@ -107,6 +195,14 @@ export default function Login() {
       })
       .catch(() => { });
   }, []);
+
+  useEffect(() => {
+    if (bgTools.length === 0) return;
+    const interval = setInterval(() => {
+      setActiveHighlightIndex((prev) => (prev + 1) % bgTools.length);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [bgTools.length]);
 
   const emailValid = !form.email || form.email.endsWith("@arithwise.com");
   const passwordStrong =
@@ -216,126 +312,106 @@ export default function Login() {
 
   return (
     <Shell compact>
-      {/* Background decoration */}
-      <div className="fixed inset-0 pointer-events-none select-none overflow-hidden z-0">
-        {/* Dot pattern top-left */}
-        <svg className="absolute left-10 top-10 text-slate-300 dark:text-slate-700 opacity-20 hidden lg:block" width="120" height="80" fill="currentColor">
-          <defs>
-            <pattern id="dot-grid" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
-              <circle cx="3" cy="3" r="1.5" />
-            </pattern>
-          </defs>
-          <rect width="120" height="80" fill="url(#dot-grid)" />
-        </svg>
-
-        {/* Dot pattern bottom-right */}
-        <svg className="absolute right-10 bottom-10 text-slate-300 dark:text-slate-700 opacity-20 hidden lg:block" width="120" height="80" fill="currentColor">
-          <defs>
-            <pattern id="dot-grid-2" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
-              <circle cx="3" cy="3" r="1.5" />
-            </pattern>
-          </defs>
-          <rect width="120" height="80" fill="url(#dot-grid-2)" />
-        </svg>
-
-        {/* Floating diagonal tool names from DB */}
-        {bgTools.map((tool, idx) => {
-          const cell = gridCells[idx % gridCells.length];
-          const col = cell.col;
-          const row = cell.row;
-
-          const left = col * 25 + 5 + (idx * 3) % 15;
-          const top = row * 25 + 5 + (idx * 7) % 15;
-          const size = 15 + (idx * 3) % 10; // 15px to 25px
-          const opacity = 0.05 + (idx * 0.01) % 0.04; // 0.05 to 0.09
-
-          return (
-            <span
-              key={tool.tool_id}
-              className={`absolute font-semibold tracking-widest uppercase bg-gradient-to-r ${tool.color_gradient || "from-slate-500 to-slate-650"} bg-clip-text text-transparent`}
-              style={{
-                left: `${left}%`,
-                top: `${top}%`,
-                fontSize: `${size}px`,
-                opacity: opacity,
-                transform: "rotate(-15deg)",
-                whiteSpace: "nowrap"
-              }}
-            >
-              {tool.name}
-            </span>
-          );
-        })}
+      {/* Theme Toggle Button */}
+      <div className="fixed top-4 right-4 z-50">
+        <IconButton
+          type="button"
+          title="Toggle Theme"
+          className="rounded-full bg-white/80 dark:bg-slate-900/80 backdrop-blur border border-slate-200 dark:border-slate-800 shadow-md hover:scale-105 transition-all w-10 h-10 flex items-center justify-center"
+          onClick={toggleTheme}
+        >
+          {theme === "light" ? <Moon size={18} /> : <Sun size={18} />}
+        </IconButton>
       </div>
 
-      <div className="relative z-10 flex min-h-[calc(100vh-3rem)] items-center justify-center py-6">
-        <div className="grid w-full gap-8 lg:grid-cols-[1fr_450px] items-stretch max-w-4xl">
-          {/* Left Side: Branding and Features */}
-          <div className="hidden lg:flex flex-col justify-between py-2">
-            <div className="space-y-6">
-              <div className="flex items-center gap-5">
-                <div className="inline-block bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-800 rounded-3xl p-4 shadow-soft">
-                  <img src="/Logo_PNG_1.png" alt="Arithwise" className="h-16 w-16 object-contain" />
-                </div>
-                <h1 className="text-5xl font-bold tracking-tight text-slate-900 dark:text-white">ARITHS</h1>
-              </div>
-              <div>
-                <p className="max-w-md text-base leading-6 text-slate-500 dark:text-slate-400">
-                  Central access for Arithwise tools, people, roles, and platform dashboards.
-                </p>
-              </div>
+      {/* Full-height split layout */}
+      <div className="login-split-layout">
+        {/* LEFT: Dark branded panel */}
+        <div className="login-left-panel">
+          {/* LightPillar WebGL background */}
+          <LightPillar
+            topColor="#5227ff"
+            bottomColor="#ff9ffc"
+            intensity={1}
+            rotationSpeed={0.3}
+            glowAmount={0.002}
+            pillarWidth={3}
+            pillarHeight={0.4}
+            noiseIntensity={0.5}
+            pillarRotation={25}
+            interactive={false}
+            mixBlendMode="screen"
+            quality="high"
+          />
+          {/* 3D OrbitalSphere — central sphere + tilted orbiting dots */}
+          <OrbitalSphere />
+
+          {/* Logo + Brand */}
+          <div className="login-left-brand">
+            <div className="login-logo-badge">A</div>
+            <div>
+              <div className="login-brand-name">Arithwise</div>
+              <div className="login-brand-sub">ARITHS</div>
             </div>
           </div>
 
-          {/* Right Side: Login Card */}
-          <form onSubmit={submitLogin} className="rounded-2xl border border-white/70 bg-white/95 dark:border-slate-800/80 dark:bg-slate-900/90 p-8 shadow-soft backdrop-blur transition-colors duration-300">
-            <div className="mb-6 flex items-start justify-between">
+          {/* Center label */}
+          <div className="login-center-label">
+            <span className="login-center-a">A</span>
+            <span className="login-center-text">PLATFORM</span>
+          </div>
+
+          {/* Tagline */}
+          <div className="login-tagline">
+            <p className="login-tagline-headline">Central access for tools, people &amp; dashboards.</p>
+            <p className="login-tagline-body">One sign-in for every Arithwise workflow — roles, analytics, and platform ops.</p>
+          </div>
+        </div>
+
+        {/* RIGHT: Login form panel */}
+        <div className="login-right-panel">
+          <form onSubmit={submitLogin} className="login-form-card">
+            {/* Header */}
+            <div className="login-form-header">
               <div>
-                <h2 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">Welcome back</h2>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Sign in to your account to continue</p>
-              </div>
-              <div className="flex gap-4 pt-1">
-                {["login", "register"].map((item) => (
-                  <button
-                    type="button"
-                    key={item}
-                    onClick={() => setMode(item)}
-                    className={`pb-1 text-sm font-semibold capitalize relative transition-all ${mode === item
-                      ? "text-brand dark:text-blue-400 font-semibold"
-                      : "text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"
-                      }`}
-                  >
-                    {item}
-                    {mode === item && (
-                      <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-brand dark:bg-blue-500 rounded-full animate-fade-in" />
-                    )}
-                  </button>
-                ))}
+                <h2 className="login-welcome">Welcome back</h2>
+                <p className="login-subtitle">Sign in to your account to continue</p>
               </div>
             </div>
 
-            <label className="field-label" htmlFor="email">Email Address</label>
+            {/* Pill tab toggle */}
+            <div className="login-tab-toggle">
+              {["login", "register"].map((item) => (
+                <button
+                  type="button"
+                  key={item}
+                  id={`tab-${item}`}
+                  onClick={() => setMode(item)}
+                  className={`login-tab-btn${mode === item ? " active" : ""}`}
+                >
+                  {item === "login" ? "Login" : "Register"}
+                </button>
+              ))}
+            </div>
+
+            {/* Email */}
+            <label className="field-label" htmlFor="email">Email address</label>
             <div className="relative">
-              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500">
-                <Mail size={18} />
-              </span>
               <input
                 id="email"
                 type="email"
                 value={form.email}
                 onChange={(event) => setForm({ ...form, email: event.target.value })}
-                className="field pl-10"
-                placeholder="name@arithwise.com"
+                className="field"
+                placeholder="admin@arithwise.com"
                 required
               />
             </div>
-            {!emailValid && <p className="mt-2 text-sm text-red-650">Email must be @arithwise.com.</p>}
+            {!emailValid && <p className="mt-2 text-sm text-red-500">Email must be @arithwise.com.</p>}
 
+            {/* Password */}
             <label className="field-label mt-4" htmlFor="password">Password</label>
             <div className="relative">
-              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500">
-                <Lock size={18} />
-              </span>
               <input
                 id="password"
                 type={showPassword ? "text" : "password"}
@@ -344,11 +420,11 @@ export default function Login() {
                   setForm({ ...form, password: event.target.value });
                   setPasswordError(false);
                 }}
-                className={`field pl-10 pr-12 transition-all ${passwordError
-                  ? "border-rose-500 bg-rose-50/10 focus:border-rose-500 focus:ring-rose-100 dark:border-rose-900/50 dark:bg-rose-950/20 animate-shake"
+                className={`field pr-12 transition-all ${passwordError
+                  ? "border-rose-500 bg-rose-50/10 focus:border-rose-500 animate-shake"
                   : ""
                   }`}
-                placeholder="Enter your password"
+                placeholder="••••••••••••"
                 required
               />
               <IconButton
@@ -361,20 +437,21 @@ export default function Login() {
               </IconButton>
             </div>
 
+            {/* Remember me + Forgot */}
             {mode === "login" && (
-              <div className="mt-4 flex items-center justify-between gap-3">
+              <div className="mt-3 flex items-center justify-between gap-3">
                 <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={form.remember}
                     onChange={(event) => setForm({ ...form, remember: event.target.checked })}
-                    className="h-4 w-4 rounded border-slate-300 dark:border-slate-800 dark:bg-slate-950 text-brand focus:ring-brand focus:ring-offset-0 cursor-pointer"
+                    className="h-4 w-4 rounded border-slate-300 text-brand focus:ring-brand focus:ring-offset-0 cursor-pointer"
                   />
                   Remember me
                 </label>
                 <button
                   type="button"
-                  className="text-sm font-semibold text-brand dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                  className="text-sm font-semibold text-slate-500 hover:text-slate-700 dark:text-slate-400"
                   onClick={() => setReset({ ...reset, step: "email", email: form.email })}
                 >
                   Forgot password?
@@ -384,10 +461,15 @@ export default function Login() {
 
             {error && <div className="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
 
-            <TextButton type="submit" disabled={busy} className="mt-6 w-full flex items-center justify-center gap-2 bg-brand hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg">
-              {mode === "login" ? <Lock size={18} /> : <UserPlus size={18} />}
-              {busy ? "Working..." : mode === "login" ? "Sign In" : "Add User"}
+            {/* Sign in button */}
+            <TextButton
+              type="submit"
+              disabled={busy}
+              className="mt-5 w-full flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-700 dark:bg-white dark:hover:bg-slate-100 dark:text-slate-900 text-white font-semibold py-3 rounded-lg transition-all"
+            >
+              {busy ? "Working..." : mode === "login" ? "Sign in" : "Add User"}
             </TextButton>
+
           </form>
         </div>
       </div>

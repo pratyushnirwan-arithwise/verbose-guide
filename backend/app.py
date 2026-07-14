@@ -30,6 +30,7 @@ app.config.update(
 mail = Mail(app)
 
 DB_CONFIG = json.loads(os.getenv("DB_CONFIG"))
+print("LOADED DB_CONFIG:", DB_CONFIG)
 ADMIN_MAIL = os.getenv("ADMIN_MAIL")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")
 FRONTEND_ORIGIN = os.getenv("FRONTEND_ORIGIN", "http://localhost:5173")
@@ -140,6 +141,13 @@ def init_databases():
                     color_gradient VARCHAR(255)
                 );
             """)
+            # Migrate: add columns if the table predates them
+            cur.execute("""
+                ALTER TABLE tools
+                    ADD COLUMN IF NOT EXISTS logo_name VARCHAR(100),
+                    ADD COLUMN IF NOT EXISTS color_gradient VARCHAR(255);
+            """)
+
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS accesses (
                     access_id SERIAL PRIMARY KEY,
@@ -261,9 +269,9 @@ def login():
             session["user_id"] = user[0]
             session["email"] = user[1]
             if user[1] in {
+                "admin@arithwise.com",
                 "vishvesh@arithwise.com",
-                "hitesh@arithwise.com",
-                "bhushan.datey@arithwise.com",
+                "hitesh@arithwise.com"
             }:
                 session["superadmin"] = True
 
@@ -508,26 +516,26 @@ def get_employees():
 
 @app.get("/api/available-tools")
 def get_available_tools():
-    conn = get_db_connection()
     try:
+        conn = get_db_connection()
         with conn.cursor() as cur:
             cur.execute("SELECT tool_id, name, description, href, logo_name, color_gradient FROM tools ORDER BY name;")
             tools = [
                 {
                     "tool_id": row[0],
                     "name": row[1],
-                    "description": row[2],
-                    "href": row[3],
-                    "logo_name": row[4],
-                    "color_gradient": row[5]
+                    "description": row[2] or "",
+                    "href": row[3] or "",
+                    "logo_name": row[4] or "Globe",
+                    "color_gradient": row[5] or "from-slate-500 to-slate-600"
                 }
                 for row in cur.fetchall()
             ]
+        conn.close()
         return jsonify({"success": True, "tools": tools})
     except Exception as exc:
         return jsonify({"success": False, "message": str(exc)}), 500
-    finally:
-        conn.close()
+
 
 
 @app.post("/api/admin/tools/create")
@@ -1067,6 +1075,108 @@ def create_user():
             hrms_conn.close()
         if trueday_conn:
             trueday_conn.close()
+
+
+# ==============================================================================
+# TEMPORARY SELF-REGISTRATION ENDPOINT (OPTION 1)
+# NOTE: You can delete this route when you are done onboarding employees.
+# ==============================================================================
+@app.post("/api/self_register")
+def self_register():
+    data = request.get_json(silent=True) or request.form
+    first_name = (data.get("firstName") or "").strip()
+    last_name = (data.get("lastName") or "").strip()
+    email = (data.get("userEmail") or "").strip().lower()
+    password = data.get("userPassword") or ""
+
+    if not first_name or not last_name or not email or not password:
+        return jsonify({"success": False, "message": "All fields are required"}), 400
+    if len(password) < 6:
+        return jsonify({"success": False, "message": "Password must be at least 6 characters"}), 400
+    if not email.endswith("@arithwise.com"):
+        return jsonify({"success": False, "message": "Only @arithwise.com email addresses are allowed to self-register"}), 400
+
+    arith_conn = None
+    trueday_conn = None
+    try:
+        full_name = f"{first_name} {last_name}"
+        hashed_password = generate_password_hash(password)
+
+        arith_conn = get_db_connection()
+        with arith_conn.cursor() as arith_cur:
+            arith_cur.execute("SELECT user_id FROM users WHERE LOWER(email) = %s", (email,))
+            if arith_cur.fetchone():
+                return jsonify({"success": False, "message": "An account with this email already exists"}), 400
+
+            arith_cur.execute(
+                """
+                INSERT INTO users (first_name, last_name, email, password)
+                VALUES (%s, %s, %s, %s)
+                RETURNING user_id
+                """,
+                (first_name, last_name, email, hashed_password),
+            )
+            user_id = arith_cur.fetchone()[0]
+
+            # Grant User access to TRUEDAY tool
+            arith_cur.execute("SELECT tool_id FROM tools WHERE name = 'TRUEDAY'")
+            tool_row = arith_cur.fetchone()
+            if tool_row:
+                arith_cur.execute(
+                    """
+                    INSERT INTO accesses (user_id, tool_id, access_type)
+                    VALUES (%s, %s, 'User')
+                    ON CONFLICT DO NOTHING
+                    """,
+                    (user_id, tool_row[0]),
+                )
+
+        # Sync account into TRUEDAY database with role 'User'
+        trueday_conn = connect_trueday()
+        with trueday_conn.cursor() as trueday_cur:
+            trueday_cur.execute("SELECT id FROM trueday.users WHERE id = %s", (user_id,))
+            if not trueday_cur.fetchone():
+                trueday_cur.execute(
+                    """
+                    INSERT INTO trueday.users (id, username, email, password, role)
+                    VALUES (%s, %s, %s, %s, 'User')
+                    """,
+                    (user_id, full_name, email, hashed_password),
+                )
+
+        arith_conn.commit()
+        if trueday_conn:
+            trueday_conn.commit()
+
+        send_email(
+            email,
+            "Welcome to Arithwise & TRUEDAY",
+            f"""
+            <h1>Welcome to Arithwise!</h1>
+            <p>Hi {first_name}, your employee account has been successfully created with access to <strong>TRUEDAY</strong>.</p>
+            <p>You can now log in at any time using your @arithwise.com email.</p>
+            """,
+        )
+
+        return jsonify(
+            {
+                "success": True,
+                "message": "Employee account created successfully with TRUEDAY access",
+                "user_id": user_id,
+            }
+        ), 201
+    except Exception as exc:
+        if arith_conn:
+            arith_conn.rollback()
+        if trueday_conn:
+            trueday_conn.rollback()
+        return jsonify({"success": False, "message": str(exc)}), 500
+    finally:
+        if arith_conn:
+            arith_conn.close()
+        if trueday_conn:
+            trueday_conn.close()
+# ==============================================================================
 
 
 @app.post("/api/send_reset_password_email")

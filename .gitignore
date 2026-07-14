@@ -19,12 +19,22 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+# Environment Variables
+.env
+*.env
+**/.env
+.env.*
+backend/.env
+frontend/.env
+!.env.example
+!.env.template
 
 # Virtual Environment
 venv/
 ENV/
 env/
 .env/
+**/venv/
 
 # IDE
 .idea/
@@ -36,9 +46,14 @@ env/
 .DS_Store
 Thumbs.db 
 
-# Node / Vite
+# Node / Vite / Build
 node_modules/
-frontend/dist/
+**/node_modules/
+dist/
+**/dist/
+build/
+**/build/
+*.local
 
 # Local runtime files
 *.log
@@ -46,3 +61,5 @@ backend/server.err.log
 backend/server.log
 frontend/vite.err.log
 frontend/vite.log
+*.tmp
+**/*.tmp
